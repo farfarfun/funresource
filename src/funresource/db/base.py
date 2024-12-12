@@ -3,7 +3,7 @@ import os
 from datetime import datetime
 from typing import Iterator
 
-from sqlalchemy import String, UniqueConstraint, select, create_engine, Enum
+from sqlalchemy import Enum, String, UniqueConstraint, create_engine, select
 from sqlalchemy.dialects.postgresql import insert
 from sqlalchemy.orm import DeclarativeBase, Mapped, Session, mapped_column
 
@@ -109,5 +109,4 @@ class ResourceManage:
     def find(self, keyword):
         with Session(self.engine) as session:
             stmt = select(Resource).where(Resource.name.regexp_match(keyword))
-            for resource in session.execute(stmt).scalars():
-                print(resource)
+            return session.execute(stmt).scalars()
