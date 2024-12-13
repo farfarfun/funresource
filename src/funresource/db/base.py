@@ -104,7 +104,7 @@ class ResourceManage:
         with Session(self.engine) as session:
             for resource in generator:
                 resource.upsert(session)
-                session.commit()
+            session.commit()
 
     def find(self, keyword):
         with Session(self.engine) as session:
