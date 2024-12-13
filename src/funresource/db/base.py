@@ -89,7 +89,7 @@ class Resource(Base):
 
 
 class ResourceManage:
-    def __init__(self, root="./resources"):
+    def __init__(self, root="./funresource"):
         root = os.path.abspath(root)
         os.makedirs(root, exist_ok=True)
         self.engine = create_engine(f"sqlite:///{root}/resource.db", echo=False)

@@ -17,7 +17,7 @@ class ResourceGenerate(BaseGenerate):
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
         self.data = pd.DataFrame()
-        self.tmp_path = os.path.abspath("./tmp")
+        self.tmp_path = os.path.abspath("./funresource/tmp")
 
     def init(self, *args, **kwargs):
         logger.info(f"tmp path: {self.tmp_path}")
