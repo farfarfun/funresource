@@ -1,6 +1,6 @@
 [project]
 name = "funresource"
-version = "1.0.3"
+version = "1.0.4"
 description = "funresource"
 readme = "README.md"
 requires-python = ">=3.8"
