@@ -43,7 +43,7 @@ class Resource(Base):
     name: Mapped[str] = mapped_column(String(128), comment="资源名称")
     desc: Mapped[str] = mapped_column(String(512), comment="资源描述", default="")
     pic: Mapped[str] = mapped_column(String(128), comment="资源图片", default="")
-    size: Mapped[int] = mapped_column(int, comment="大小", default=0)
+    size: Mapped[int] = mapped_column(comment="大小", default=0)
 
     url: Mapped[str] = mapped_column(String(128), comment="分享链接")
     pwd: Mapped[str] = mapped_column(String(64), comment="密码", default="")
