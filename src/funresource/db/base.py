@@ -3,7 +3,7 @@ import os
 from datetime import datetime
 from typing import Iterator
 
-from sqlalchemy import Enum, String, UniqueConstraint, create_engine, select
+from sqlalchemy import Enum, String, UniqueConstraint, create_engine, select, BIGINT
 from sqlalchemy.dialects.postgresql import insert
 from sqlalchemy.orm import DeclarativeBase, Mapped, Session, mapped_column
 
@@ -41,6 +41,10 @@ class Resource(Base):
     )
 
     name: Mapped[str] = mapped_column(String(128), comment="资源名称")
+    desc: Mapped[str] = mapped_column(String(512), comment="资源描述", default="")
+    pic: Mapped[str] = mapped_column(String(128), comment="资源图片", default="")
+    size: Mapped[int] = mapped_column(int, comment="大小", default=0)
+
     url: Mapped[str] = mapped_column(String(128), comment="分享链接")
     pwd: Mapped[str] = mapped_column(String(64), comment="密码", default="")
     update_time: Mapped[datetime] = mapped_column(
@@ -109,4 +113,4 @@ class ResourceManage:
     def find(self, keyword):
         with Session(self.engine) as session:
             stmt = select(Resource).where(Resource.name.regexp_match(keyword))
-            return session.execute(stmt).scalars()
+            return [resource for resource in session.execute(stmt)]
