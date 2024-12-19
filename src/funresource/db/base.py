@@ -1,5 +1,6 @@
 import enum
 import os
+import re
 from datetime import datetime
 from typing import Iterator
 
@@ -11,6 +12,14 @@ from sqlalchemy.dialects.postgresql import insert
 from sqlalchemy.orm import DeclarativeBase, Mapped, Session, mapped_column
 
 logger = getLogger("funresource")
+
+
+def check_tags(text, words, tags):
+    pattern = r"\b(?:" + "|".join(map(re.escape, words)) + r")\b"
+    if bool(re.compile(pattern, re.IGNORECASE).search(text)):
+        return tags
+    else:
+        return []
 
 
 class Source(int, enum.Enum):
@@ -55,7 +64,7 @@ class Resource(Base):
     update_time: Mapped[datetime] = mapped_column(
         String(128), comment="更新时间", default=datetime.now
     )
-    tags: Mapped[str] = mapped_column(String(128), comment="资源标签", default="")
+    tags: Mapped[str] = mapped_column(String(128), comment="资源类型", default="")
 
     __table_args__ = (UniqueConstraint("name", "url", name="unique_constraint"),)
 
@@ -65,16 +74,6 @@ class Resource(Base):
     @property
     def uid(self):
         return f"{self.name}:{self.url}"
-
-    def upsert2(self, session: Session):
-        if not self.is_avail():
-            return False
-        insert_stmt = insert(Resource).values(**self.to_dict())
-        session.execute(
-            insert_stmt.on_conflict_do_update(
-                constraint="name,url", set_=self.to_dict()
-            )
-        )
 
     @disk_cache(cache_key="key", expire=600)
     def get_all_uid(self, session: Session, key="default"):
@@ -109,6 +108,25 @@ class Resource(Base):
                 self.source = Source.ALIYUN
             if "quark" in self.url:
                 self.source = Source.KUAKE
+
+        tags = []
+        if self.tags is not None:
+            self.tags.extend(
+                check_tags(self.tags, words=["电视剧", "剧集"], tags=["电视剧"])
+            )
+            self.tags.extend(check_tags(self.tags, words=["韩剧"], tags=["韩剧"]))
+            self.tags.extend(
+                check_tags(
+                    self.tags, words=["动画综艺综艺综艺"], tags=["动画综艺综艺综艺"]
+                )
+            )
+            self.tags.extend(check_tags(self.tags, words=["短剧"], tags=["短剧"]))
+            self.tags.extend(check_tags(self.tags, words=["动漫"], tags=["动漫"]))
+            self.tags.extend(check_tags(self.tags, words=["电影"], tags=["电影"]))
+            self.tags.extend(check_tags(self.tags, words=["国外"], tags=["国外"]))
+
+        self.tags = ",".join(tags)
+
         if self.url is None or not self.url.startswith("http"):
             return False
         return True

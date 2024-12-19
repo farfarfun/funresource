@@ -80,7 +80,7 @@ class ResourceGenerate(BaseGenerate):
                 name=row["资源名称"].strip(),
                 url=row["分享链接"].strip(),
                 update_time=row["更新时间"],
-                type=row["资源类型"].strip(),
+                tags=row["资源类型"].strip(),
             )
 
     def destroy(self, *args, **kwargs):
