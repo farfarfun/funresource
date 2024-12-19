@@ -4,7 +4,7 @@ from datetime import datetime
 from typing import Iterator
 
 from funsecret import read_cache_secret
-from sqlalchemy import Enum, String, UniqueConstraint, create_engine, select
+from sqlalchemy import Enum, String, UniqueConstraint, create_engine, select, update
 from sqlalchemy.dialects.postgresql import insert
 from sqlalchemy.orm import DeclarativeBase, Mapped, Session, mapped_column
 
@@ -58,7 +58,7 @@ class Resource(Base):
     def __repr__(self) -> str:
         return f"name: {self.name}, url: {self.url}, update_time: {self.update_time}"
 
-    def upsert(self, session: Session):
+    def upsert2(self, session: Session):
         self.format()
         insert_stmt = insert(Resource).values(**self.to_dict())
         session.execute(
@@ -66,6 +66,20 @@ class Resource(Base):
                 constraint="name,url", set_=self.to_dict()
             )
         )
+
+    def upsert(self, session: Session):
+        self.format()
+        sql = select(Resource).where(
+            Resource.name == self.name and Resource.url == self.url
+        )
+        if session.execute(sql).first() is None:
+            session.execute(insert(Resource).values(**self.to_dict()))
+        else:
+            session.execute(
+                update(Resource)
+                .where(Resource.name == self.name and Resource.url == self.url)
+                .values(**self.to_dict())
+            )
 
     def format(self):
         if self.url is not None:
