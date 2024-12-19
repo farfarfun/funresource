@@ -102,7 +102,7 @@ class TelegramChannelGenerate(BaseGenerate):
     def generate(self, *args, **kwargs) -> Iterator[Resource]:
         for i, channel_name in enumerate(self.channel_list):
             for entry in self.parse_page(
-                channel_name, prefix=f"{i}/{len(self.channel_list)}"
+                channel_name, prefix=f"{i+1}/{len(self.channel_list)}"
             ):
                 yield Resource(
                     name=entry["name"],
