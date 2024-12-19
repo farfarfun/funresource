@@ -78,7 +78,7 @@ class Resource(Base):
     @ttl_cache(ttl=600)
     def get_all_uid(self, session: Session):
         result = []
-        for resource in session.execute(select(Resource)):
+        for resource in session.execute(select(Resource)).scalars():
             result.append(resource.uid)
         return result
 
