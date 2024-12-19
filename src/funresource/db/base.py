@@ -67,7 +67,8 @@ class Resource(Base):
         return f"{self.name}:{self.url}"
 
     def upsert2(self, session: Session):
-        self.format()
+        if not self.is_avail():
+            return False
         insert_stmt = insert(Resource).values(**self.to_dict())
         session.execute(
             insert_stmt.on_conflict_do_update(
@@ -91,7 +92,8 @@ class Resource(Base):
         return False
 
     def upsert(self, session: Session, update_data=False):
-        self.format()
+        if not self.is_avail():
+            return False
         if not self.exists(session):
             session.execute(insert(Resource).values(**self.to_dict()))
         elif update_data:
@@ -101,12 +103,15 @@ class Resource(Base):
                 .values(**self.to_dict())
             )
 
-    def format(self):
+    def is_avail(self):
         if self.url is not None:
             if "alipan" in self.url or "aliyundrive" in self.url:
                 self.source = Source.ALIYUN
             if "quark" in self.url:
                 self.source = Source.KUAKE
+        if self.url is None or not self.url.startswith("http"):
+            return False
+        return True
 
     def to_dict(self) -> dict:
         data = {
