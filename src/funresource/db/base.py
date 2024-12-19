@@ -109,21 +109,21 @@ class Resource(Base):
             if "quark" in self.url:
                 self.source = Source.KUAKE
 
-        tags = []
+        tags = [self.tags]
         if self.tags is not None:
-            self.tags.extend(
+            tags.extend(
                 check_tags(self.tags, words=["电视剧", "剧集"], tags=["电视剧"])
             )
-            self.tags.extend(check_tags(self.tags, words=["韩剧"], tags=["韩剧"]))
-            self.tags.extend(
+            tags.extend(check_tags(self.tags, words=["韩剧"], tags=["韩剧"]))
+            tags.extend(
                 check_tags(
                     self.tags, words=["动画综艺综艺综艺"], tags=["动画综艺综艺综艺"]
                 )
             )
-            self.tags.extend(check_tags(self.tags, words=["短剧"], tags=["短剧"]))
-            self.tags.extend(check_tags(self.tags, words=["动漫"], tags=["动漫"]))
-            self.tags.extend(check_tags(self.tags, words=["电影"], tags=["电影"]))
-            self.tags.extend(check_tags(self.tags, words=["国外"], tags=["国外"]))
+            tags.extend(check_tags(self.tags, words=["短剧"], tags=["短剧"]))
+            tags.extend(check_tags(self.tags, words=["动漫"], tags=["动漫"]))
+            tags.extend(check_tags(self.tags, words=["电影"], tags=["电影"]))
+            tags.extend(check_tags(self.tags, words=["国外"], tags=["国外"]))
 
         self.tags = ",".join(tags)
 
