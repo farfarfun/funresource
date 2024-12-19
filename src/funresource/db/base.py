@@ -4,9 +4,13 @@ from datetime import datetime
 from typing import Iterator
 
 from funsecret import read_cache_secret
+from funutil import getLogger
+from funutil.cache import ttl_cache
 from sqlalchemy import Enum, String, UniqueConstraint, create_engine, select, update
 from sqlalchemy.dialects.postgresql import insert
 from sqlalchemy.orm import DeclarativeBase, Mapped, Session, mapped_column
+
+logger = getLogger("funresource")
 
 
 class Source(int, enum.Enum):
@@ -58,6 +62,10 @@ class Resource(Base):
     def __repr__(self) -> str:
         return f"name: {self.name}, url: {self.url}, update_time: {self.update_time}"
 
+    @property
+    def uid(self):
+        return f"{self.name}:{self.url}"
+
     def upsert2(self, session: Session):
         self.format()
         insert_stmt = insert(Resource).values(**self.to_dict())
@@ -67,14 +75,26 @@ class Resource(Base):
             )
         )
 
-    def upsert(self, session: Session):
+    @ttl_cache(ttl=600)
+    def get_all_uid(self, session: Session):
+        result = []
+        for resource in session.execute(select(Resource)):
+            result.append(resource.uid)
+        return result
+
+    def exists(self, session: Session):
+        # sql = select(Resource).where(Resource.name == self.name and Resource.url == self.url)
+        # return session.execute(sql).first() is not None
+        result = self.get_all_uid(session)
+        if self.uid in result:
+            return True
+        return False
+
+    def upsert(self, session: Session, update_data=False):
         self.format()
-        sql = select(Resource).where(
-            Resource.name == self.name and Resource.url == self.url
-        )
-        if session.execute(sql).first() is None:
+        if not self.exists(session):
             session.execute(insert(Resource).values(**self.to_dict()))
-        else:
+        elif update_data:
             session.execute(
                 update(Resource)
                 .where(Resource.name == self.name and Resource.url == self.url)
@@ -108,9 +128,7 @@ class Resource(Base):
 
 
 class ResourceManage:
-    def __init__(
-        self,
-    ):
+    def __init__(self):
         self.engine = create_engine(self.get_uri(), echo=False)
         Base.metadata.create_all(self.engine)
 
@@ -121,7 +139,6 @@ class ResourceManage:
             return uri
         root = os.path.abspath("./funresource")
         os.makedirs(root, exist_ok=True)
-
         return f"sqlite:///{root}/resource.db"
 
     def add_resource(self, resource: Resource):
@@ -129,12 +146,15 @@ class ResourceManage:
             resource.upsert(session)
             session.commit()
 
-    def add_resources(self, generator: Iterator[Resource]):
+    def add_resources(self, generator: Iterator[Resource], update_data=False):
         with Session(self.engine) as session:
             for size, resource in enumerate(generator):
-                resource.upsert(session)
-                if size % 20 == 0:
-                    session.commit()
+                try:
+                    resource.upsert(session, update_data)
+                    if size % 20 == 0:
+                        session.commit()
+                except Exception as e:
+                    logger.error(e)
             session.commit()
 
     def find(self, keyword):
