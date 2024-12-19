@@ -1,3 +1,4 @@
+import traceback
 from datetime import datetime
 from typing import Iterator
 
@@ -6,6 +7,7 @@ from bs4 import BeautifulSoup
 from funresource.db.base import Resource
 from funresource.generator.base import BaseGenerate
 from funutil import getLogger
+from tqdm import tqdm
 
 logger = getLogger("funresource")
 
@@ -81,11 +83,14 @@ class TelegramChannelGenerate(BaseGenerate):
 
     def parse_page(self, channel_name="Aliyun_4K_Movies", page_no=10):
         page: TelegramPage = None
-        for i in range(page_no):
-            url = f"/s/{channel_name}" if page is None else page.prev()
-            page = TelegramPage(url)
-            for res in page.parse():
-                yield res
+        for i in tqdm(range(page_no), desc=channel_name):
+            try:
+                url = f"/s/{channel_name}" if page is None else page.prev()
+                page = TelegramPage(url)
+                for res in page.parse():
+                    yield res
+            except Exception as e:
+                logger.error(f"parse error: {e}:{traceback.format_exc()}")
 
     def generate(self, *args, **kwargs) -> Iterator[Resource]:
         for channel_name in self.channel_list:
