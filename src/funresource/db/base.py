@@ -3,7 +3,8 @@ import os
 from datetime import datetime
 from typing import Iterator
 
-from sqlalchemy import Enum, String, UniqueConstraint, create_engine, select, BIGINT
+from funsecret import read_cache_secret
+from sqlalchemy import Enum, String, UniqueConstraint, create_engine, select
 from sqlalchemy.dialects.postgresql import insert
 from sqlalchemy.orm import DeclarativeBase, Mapped, Session, mapped_column
 
@@ -93,11 +94,21 @@ class Resource(Base):
 
 
 class ResourceManage:
-    def __init__(self, root="./funresource"):
-        root = os.path.abspath(root)
-        os.makedirs(root, exist_ok=True)
-        self.engine = create_engine(f"sqlite:///{root}/resource.db", echo=False)
+    def __init__(
+        self,
+    ):
+        self.engine = create_engine(self.get_uri(), echo=False)
         Base.metadata.create_all(self.engine)
+
+    @staticmethod
+    def get_uri() -> str:
+        uri = read_cache_secret("funresource", "engine", "uri")
+        if uri is not None:
+            return uri
+        root = os.path.abspath("./funresource")
+        os.makedirs(root, exist_ok=True)
+
+        return f"sqlite:///{root}/resource.db"
 
     def add_resource(self, resource: Resource):
         with Session(self.engine) as session:
