@@ -107,21 +107,27 @@ class Resource(Base):
             if "quark" in self.url:
                 self.source = Source.KUAKE
 
-        tags = [self.tags]
+        tags = []
         if self.tags is not None:
+            for word in ["美剧", "韩剧", "泰剧", "日剧", "国外"]:
+                tags.extend(check_tags(self.tags, words=[word], tags=[word]))
+            for word in ["短剧", "动画", "动漫", "电影", "综艺", "春晚"]:
+                tags.extend(check_tags(self.tags, words=[word], tags=[word]))
+
             tags.extend(
                 check_tags(self.tags, words=["电视剧", "剧集"], tags=["电视剧"])
             )
-            tags.extend(check_tags(self.tags, words=["韩剧"], tags=["韩剧"]))
+
             tags.extend(
-                check_tags(
-                    self.tags, words=["动画综艺综艺综艺"], tags=["动画综艺综艺综艺"]
-                )
+                check_tags(self.tags, words=["纪录片", "记录"], tags=["纪录片"])
             )
-            tags.extend(check_tags(self.tags, words=["短剧"], tags=["短剧"]))
-            tags.extend(check_tags(self.tags, words=["动漫"], tags=["动漫"]))
-            tags.extend(check_tags(self.tags, words=["电影"], tags=["电影"]))
-            tags.extend(check_tags(self.tags, words=["国外"], tags=["国外"]))
+            tags.extend(check_tags(self.tags, words=["相声", "德云社"], tags=["相声"]))
+            tags.extend(
+                check_tags(self.tags, words=["小说", "书籍", "读物"], tags=["小说"])
+            )
+
+        if len(tags) == 0:
+            tags.append(self.tags)
         tags = list(set(tags))
         self.tags = ",".join(tags)
 
@@ -167,7 +173,7 @@ class ResourceManage:
             resource.upsert(session)
             session.commit()
 
-    def add_resources(self, generator: Iterator[Resource], update_data=False):
+    def add_resources(self, generator: Iterator[Resource], update_data=True):
         with Session(self.engine) as session:
             for size, resource in enumerate(generator):
                 try:
