@@ -1,6 +1,5 @@
 import enum
 import os
-import re
 from datetime import datetime
 from typing import Iterator
 
@@ -15,8 +14,7 @@ logger = getLogger("funresource")
 
 
 def check_tags(text, words, tags):
-    pattern = r"\b(?:" + "|".join(map(re.escape, words)) + r")\b"
-    if bool(re.compile(pattern, re.IGNORECASE).search(text)):
+    if any(word.lower() in text for word in words):
         return tags
     else:
         return []
@@ -124,7 +122,7 @@ class Resource(Base):
             tags.extend(check_tags(self.tags, words=["动漫"], tags=["动漫"]))
             tags.extend(check_tags(self.tags, words=["电影"], tags=["电影"]))
             tags.extend(check_tags(self.tags, words=["国外"], tags=["国外"]))
-
+        tags = list(set(tags))
         self.tags = ",".join(tags)
 
         if self.url is None or not self.url.startswith("http"):
