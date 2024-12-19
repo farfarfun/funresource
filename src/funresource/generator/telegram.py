@@ -86,9 +86,9 @@ class TelegramChannelGenerate(BaseGenerate):
     def load(self, *args, **kwargs):
         pass
 
-    def parse_page(self, channel_name="Aliyun_4K_Movies", page_no=10):
+    def parse_page(self, channel_name="Aliyun_4K_Movies", page_no=10, prefix=""):
         page: TelegramPage = None
-        for i in tqdm(range(page_no), desc=channel_name):
+        for i in tqdm(range(page_no), desc=f"{prefix}-{channel_name}"):
             try:
                 url = f"/s/{channel_name}" if page is None else page.prev()
                 if url is None:
@@ -100,8 +100,10 @@ class TelegramChannelGenerate(BaseGenerate):
                 logger.error(f"parse error: {e}:{traceback.format_exc()}")
 
     def generate(self, *args, **kwargs) -> Iterator[Resource]:
-        for channel_name in self.channel_list:
-            for entry in self.parse_page(channel_name):
+        for i, channel_name in enumerate(self.channel_list):
+            for entry in self.parse_page(
+                channel_name, prefix=f"{i}/{len(self.channel_list)}"
+            ):
                 yield Resource(
                     name=entry["name"],
                     url=entry["link"],
