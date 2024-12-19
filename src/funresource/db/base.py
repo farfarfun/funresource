@@ -5,7 +5,7 @@ from typing import Iterator
 
 from funsecret import read_cache_secret
 from funutil import getLogger
-from funutil.cache import ttl_cache
+from funutil.cache import disk_cache
 from sqlalchemy import Enum, String, UniqueConstraint, create_engine, select, update
 from sqlalchemy.dialects.postgresql import insert
 from sqlalchemy.orm import DeclarativeBase, Mapped, Session, mapped_column
@@ -75,8 +75,8 @@ class Resource(Base):
             )
         )
 
-    @ttl_cache(ttl=600)
-    def get_all_uid(self, session: Session):
+    @disk_cache(cache_key="key", expire=600)
+    def get_all_uid(self, session: Session, key="default"):
         result = []
         for resource in session.execute(select(Resource)).scalars():
             result.append(resource.uid)
@@ -85,8 +85,8 @@ class Resource(Base):
     def exists(self, session: Session):
         # sql = select(Resource).where(Resource.name == self.name and Resource.url == self.url)
         # return session.execute(sql).first() is not None
-        result = self.get_all_uid(session)
-        if self.uid in result:
+        self.cache_result = self.get_all_uid(session)
+        if self.uid in self.cache_result:
             return True
         return False
 
