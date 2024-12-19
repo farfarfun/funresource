@@ -4,10 +4,11 @@ from typing import Iterator
 
 import requests
 from bs4 import BeautifulSoup
-from funresource.db.base import Resource
-from funresource.generator.base import BaseGenerate
 from funutil import getLogger
 from tqdm import tqdm
+
+from funresource.db.base import Resource
+from funresource.generator.base import BaseGenerate
 
 logger = getLogger("funresource")
 
@@ -20,7 +21,11 @@ class TelegramPage:
         self.soup = BeautifulSoup(self.text, "lxml")
 
     def prev(self):
-        return self.soup.find(rel="prev")["href"]
+        try:
+            return self.soup.find(rel="prev")["href"]
+        except Exception as e:
+            logger.error(f"cannot find prev page:{e}")
+            return None
 
     def next(self):
         return self.soup.find(rel="prev")["href"]
@@ -86,6 +91,8 @@ class TelegramChannelGenerate(BaseGenerate):
         for i in tqdm(range(page_no), desc=channel_name):
             try:
                 url = f"/s/{channel_name}" if page is None else page.prev()
+                if url is None:
+                    break
                 page = TelegramPage(url)
                 for res in page.parse():
                     yield res
