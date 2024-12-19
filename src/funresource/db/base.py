@@ -160,4 +160,4 @@ class ResourceManage:
     def find(self, keyword):
         with Session(self.engine) as session:
             stmt = select(Resource).where(Resource.name.regexp_match(keyword))
-            return [resource for resource in session.execute(stmt)]
+            return [resource for resource in session.execute(stmt).scalars()]
