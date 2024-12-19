@@ -151,7 +151,7 @@ class ResourceManage:
             for size, resource in enumerate(generator):
                 try:
                     resource.upsert(session, update_data)
-                    if size % 20 == 0:
+                    if size % 100 == 0:
                         session.commit()
                 except Exception as e:
                     logger.error(e)
