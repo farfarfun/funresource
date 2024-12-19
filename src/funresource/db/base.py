@@ -131,8 +131,10 @@ class ResourceManage:
 
     def add_resources(self, generator: Iterator[Resource]):
         with Session(self.engine) as session:
-            for resource in generator:
+            for size, resource in enumerate(generator):
                 resource.upsert(session)
+                if size % 20 == 0:
+                    session.commit()
             session.commit()
 
     def find(self, keyword):
