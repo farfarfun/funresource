@@ -55,7 +55,7 @@ class Resource(Base):
     update_time: Mapped[datetime] = mapped_column(
         String(128), comment="更新时间", default=datetime.now
     )
-    type: Mapped[str] = mapped_column(String(128), comment="资源类型", default="")
+    tags: Mapped[str] = mapped_column(String(128), comment="资源标签", default="")
 
     __table_args__ = (UniqueConstraint("name", "url", name="unique_constraint"),)
 
@@ -124,7 +124,7 @@ class Resource(Base):
             "url": self.url,
             "pwd": self.pwd,
             "update_time": self.update_time or datetime.now(),
-            "type": self.type,
+            "tags": self.tags,
         }
         for key in list(data.keys()):
             if data[key] is None:
