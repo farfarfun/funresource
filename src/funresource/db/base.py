@@ -5,7 +5,6 @@ from typing import Iterator
 
 from funsecret import read_secret
 from funutil import getLogger
-from funutil.cache import disk_cache
 from sqlalchemy import (
     Enum,
     String,
@@ -80,20 +79,11 @@ class Resource(Base):
     def uid(self):
         return f"{self.name}:{self.url}"
 
-    @disk_cache(cache_key="key", expire=600)
-    def get_all_uid(self, session: Session, key="default"):
-        result = []
-        for resource in session.execute(select(Resource)).scalars():
-            result.append(resource.uid)
-        return result
-
     def exists(self, session: Session):
-        # sql = select(Resource).where(Resource.name == self.name and Resource.url == self.url)
-        # return session.execute(sql).first() is not None
-        self.cache_result = self.get_all_uid(session)
-        if self.uid in self.cache_result:
-            return True
-        return False
+        sql = select(Resource).where(
+            Resource.name == self.name and Resource.url == self.url
+        )
+        return session.execute(sql).first() is not None
 
     def upsert(self, session: Session, update_data=False):
         if not self.is_avail():

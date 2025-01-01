@@ -12,4 +12,4 @@ generator_list: List[BaseGenerate] = [
 ]
 
 for generator in generator_list[:1]:
-    manage.add_resources(generator=generator.generate())
+    generator.run(manage)
