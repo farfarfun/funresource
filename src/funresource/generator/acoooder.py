@@ -13,7 +13,7 @@ from .base import BaseGenerate
 logger = getLogger("funresource")
 
 
-class ResourceGenerate(BaseGenerate):
+class AcoooderGenerate(BaseGenerate):
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
         self.data = pd.DataFrame()

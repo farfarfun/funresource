@@ -3,7 +3,7 @@ import os
 from datetime import datetime
 from typing import Iterator
 
-from funsecret import read_cache_secret
+from funsecret import read_secret
 from funutil import getLogger
 from funutil.cache import disk_cache
 from sqlalchemy import Enum, String, UniqueConstraint, create_engine, select, update
@@ -155,13 +155,15 @@ class Resource(Base):
 
 
 class ResourceManage:
-    def __init__(self):
-        self.engine = create_engine(self.get_uri(), echo=False)
+    def __init__(self, uri=None):
+        self.engine = create_engine(self.get_uri(uri), echo=False)
         Base.metadata.create_all(self.engine)
 
     @staticmethod
-    def get_uri() -> str:
-        uri = read_cache_secret("funresource", "engine", "uri")
+    def get_uri(uri=None) -> str:
+        if uri is not None:
+            return uri
+        uri = read_secret("funresource", "engine", "uri")
         if uri is not None:
             return uri
         root = os.path.abspath("./funresource")
