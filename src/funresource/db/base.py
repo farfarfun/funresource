@@ -6,8 +6,15 @@ from typing import Iterator
 from funsecret import read_secret
 from funutil import getLogger
 from funutil.cache import disk_cache
-from sqlalchemy import Enum, String, UniqueConstraint, create_engine, select, update
-from sqlalchemy.dialects.postgresql import insert
+from sqlalchemy import (
+    Enum,
+    String,
+    UniqueConstraint,
+    create_engine,
+    insert,
+    select,
+    update,
+)
 from sqlalchemy.orm import DeclarativeBase, Mapped, Session, mapped_column
 
 logger = getLogger("funresource")
