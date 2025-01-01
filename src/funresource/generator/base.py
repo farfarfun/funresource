@@ -23,8 +23,9 @@ class BaseGenerate:
     def destroy(self, *args, **kwargs):
         pass
 
-    def run(self, *args, **kwargs):
+    def run(self, manage=None, *args, **kwargs):
+        manage = manage or ResourceManage()
         self.init(*args, **kwargs)
         self.load(*args, **kwargs)
-        ResourceManage().add_resources(self.generate(*args, **kwargs))
+        manage.add_resources(self.generate(*args, **kwargs))
         self.destroy(*args, **kwargs)
