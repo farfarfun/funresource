@@ -3,17 +3,17 @@ import os
 from datetime import datetime
 from typing import Iterator
 
+from fundb.sqlalchemy.table import BaseTable
 from funsecret import read_secret
 from funutil import getLogger
 from sqlalchemy import (
     Enum,
     String,
-    UniqueConstraint,
     create_engine,
     select,
 )
 from sqlalchemy.dialects.mysql import insert
-from sqlalchemy.orm import DeclarativeBase, Mapped, Session, mapped_column
+from sqlalchemy.orm import Mapped, Session, mapped_column
 
 logger = getLogger("funresource")
 
@@ -39,16 +39,8 @@ class Status(enum.IntEnum):
     OFFLINE = 3  # 下架
 
 
-class Base(DeclarativeBase):
-    pass
-
-
-class Resource(Base):
+class Resource(BaseTable):
     __tablename__ = "resource"
-    gmt_create: Mapped[datetime] = mapped_column(comment="", default=datetime.now)
-    gmt_update: Mapped[datetime] = mapped_column(
-        comment="", default=datetime.now, onupdate=datetime.now
-    )
     source: Mapped[int] = mapped_column(
         Enum(Source), comment="来源", default=Source.ALIYUN
     )
@@ -56,32 +48,41 @@ class Resource(Base):
         Enum(Status), comment="状态", default=Status.ONLINE
     )
 
-    name: Mapped[str] = mapped_column(String(128), comment="资源名称", primary_key=True)
+    name: Mapped[str] = mapped_column(String(128), comment="资源名称")
     desc: Mapped[str] = mapped_column(String(512), comment="资源描述", default="")
     pic: Mapped[str] = mapped_column(String(128), comment="资源图片", default="")
     size: Mapped[int] = mapped_column(comment="大小", default=0)
 
-    url: Mapped[str] = mapped_column(String(128), comment="分享链接", primary_key=True)
+    url: Mapped[str] = mapped_column(String(128), comment="分享链接")
     pwd: Mapped[str] = mapped_column(String(64), comment="密码", default="")
     update_time: Mapped[datetime] = mapped_column(
         String(128), comment="更新时间", default=datetime.now
     )
     tags: Mapped[str] = mapped_column(String(128), comment="资源类型", default="")
 
-    # __table_args__ = (UniqueConstraint("name", "url", name="unique_constraint"),)
-
     def __repr__(self) -> str:
         return f"name: {self.name}, url: {self.url}, update_time: {self.update_time}"
+
+    def _to_dict(self) -> dict:
+        return {
+            "name": self.name or "",
+            "source": self.source or "",
+            "status": self.status or 2,
+            "url": self.url or "",
+            "pwd": self.pwd or "",
+            "update_time": self.update_time or datetime.now(),
+            "tags": self.tags or "",
+        }
+
+    def _get_uid(self):
+        return f"{self.name}:{self.url}"
+
+    def _child(self):
+        return Resource
 
     @property
     def uid(self):
         return f"{self.name}:{self.url}"
-
-    def exists(self, session: Session):
-        sql = select(Resource).where(
-            Resource.name == self.name and Resource.url == self.url
-        )
-        return session.execute(sql).first() is not None
 
     def upsert(self, session: Session, update_data=False):
         stmt = insert(Resource).values(**self.to_dict())
@@ -137,26 +138,11 @@ class Resource(Base):
             return False
         return True
 
-    def to_dict(self) -> dict:
-        data = {
-            "name": self.name or "",
-            "source": self.source or "",
-            "status": self.status or 2,
-            "url": self.url or "",
-            "pwd": self.pwd or "",
-            "update_time": self.update_time or datetime.now(),
-            "tags": self.tags or "",
-        }
-        for key in list(data.keys()):
-            if data[key] is None:
-                data.pop(key)
-        return data
-
 
 class ResourceManage:
     def __init__(self, uri=None):
         self.engine = create_engine(self.get_uri(uri), echo=False)
-        Base.metadata.create_all(self.engine)
+        BaseTable.metadata.create_all(self.engine)
 
     @staticmethod
     def get_uri(uri=None) -> str:
