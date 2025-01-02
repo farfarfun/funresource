@@ -1,6 +1,6 @@
 [project]
 name = "funresource"
-version = "1.0.36"
+version = "1.0.37"
 description = "funresource"
 readme = "README.md"
 requires-python = ">=3.8"
@@ -8,6 +8,9 @@ dependencies = [ "bs4>=0.0.2", "feedparser>=6.0.11", "funbuild>=1.5.55", "funsec
 [[project.authors]]
 name = "niuliangtao"
 email = "farfarfun@qq.com"
+
+[project.scripts]
+funresource = "funresource.run:funresource"
 
 [tool.setuptools]
 license-files = []
