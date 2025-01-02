@@ -1,6 +1,5 @@
 import enum
 import os
-from datetime import datetime
 from typing import Iterator
 
 from fundb.sqlalchemy.table import BaseTable
@@ -44,9 +43,7 @@ class Resource(BaseTable):
     source: Mapped[int] = mapped_column(
         Enum(Source), comment="来源", default=Source.ALIYUN
     )
-    status: Mapped[int] = mapped_column(
-        Enum(Status), comment="状态", default=Status.ONLINE
-    )
+    status: Mapped[int] = mapped_column(comment="状态", default=2)
 
     name: Mapped[str] = mapped_column(String(128), comment="资源名称")
     desc: Mapped[str] = mapped_column(String(512), comment="资源描述", default="")
@@ -55,13 +52,10 @@ class Resource(BaseTable):
 
     url: Mapped[str] = mapped_column(String(128), comment="分享链接")
     pwd: Mapped[str] = mapped_column(String(64), comment="密码", default="")
-    update_time: Mapped[datetime] = mapped_column(
-        String(128), comment="更新时间", default=datetime.now
-    )
     tags: Mapped[str] = mapped_column(String(128), comment="资源类型", default="")
 
     def __repr__(self) -> str:
-        return f"name: {self.name}, url: {self.url}, update_time: {self.update_time}"
+        return f"name: {self.name}, url: {self.url}, gmt_modified: {self.gmt_modified}"
 
     def _to_dict(self) -> dict:
         return {
@@ -70,7 +64,6 @@ class Resource(BaseTable):
             "status": self.status or 2,
             "url": self.url or "",
             "pwd": self.pwd or "",
-            "update_time": self.update_time or datetime.now(),
             "tags": self.tags or "",
         }
 
@@ -98,7 +91,6 @@ class Resource(BaseTable):
             status=stmt.inserted.status,
             url=stmt.inserted.url,
             pwd=stmt.inserted.pwd,
-            update_time=stmt.inserted.update_time,
             tags=stmt.inserted.tags,
         )
         session.execute(stmt)

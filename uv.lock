@@ -308,12 +308,13 @@ wheels = [
 
 [[package]]
 name = "funresource"
-version = "1.0.44"
+version = "1.0.45"
 source = { virtual = "." }
 dependencies = [
     { name = "bs4" },
     { name = "feedparser" },
     { name = "funbuild" },
+    { name = "funddb" },
     { name = "funsecret" },
     { name = "funutil" },
     { name = "sqlalchemy" },
@@ -325,6 +326,7 @@ requires-dist = [
     { name = "bs4", specifier = ">=0.0.2" },
     { name = "feedparser", specifier = ">=6.0.11" },
     { name = "funbuild", specifier = ">=1.5.55" },
+    { name = "funddb", specifier = ">=1.2.11" },
     { name = "funsecret", specifier = ">=1.4.30" },
     { name = "funutil", specifier = ">=1.0.43" },
     { name = "sqlalchemy", specifier = ">=2.0.36" },
