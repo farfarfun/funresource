@@ -167,7 +167,9 @@ class ResourceManage:
                         res.clear()
                 except Exception as e:
                     logger.error(e)
+            Resource.upsert_mult(session, res, update_data=update_data)
             session.commit()
+            res.clear()
 
     def find(self, keyword):
         with Session(self.engine) as session:
