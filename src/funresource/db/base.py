@@ -10,10 +10,9 @@ from sqlalchemy import (
     String,
     UniqueConstraint,
     create_engine,
-    insert,
     select,
-    update,
 )
+from sqlalchemy.dialects.mysql import insert
 from sqlalchemy.orm import DeclarativeBase, Mapped, Session, mapped_column
 
 logger = getLogger("funresource")
@@ -86,16 +85,19 @@ class Resource(Base):
         return session.execute(sql).first() is not None
 
     def upsert(self, session: Session, update_data=False):
-        if not self.is_avail():
-            return False
-        if not self.exists(session):
-            session.execute(insert(Resource).values(**self.to_dict()))
-        elif update_data:
-            session.execute(
-                update(Resource)
-                .where(Resource.name == self.name and Resource.url == self.url)
-                .values(**self.to_dict())
-            )
+        stmt = insert(Resource).values(**self.to_dict())
+        stmt = stmt.on_duplicate_key_update(**self.to_dict())
+        session.execute(stmt)
+        # if not self.is_avail():
+        #     return False
+        # if not self.exists(session):
+        #     session.execute(insert(Resource).values(**self.to_dict()))
+        # elif update_data:
+        #     session.execute(
+        #         update(Resource)
+        #         .where(Resource.name == self.name and Resource.url == self.url)
+        #         .values(**self.to_dict())
+        #     )
 
     def is_avail(self):
         if self.url is not None:
