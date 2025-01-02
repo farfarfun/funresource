@@ -14,7 +14,7 @@ from funutil import getLogger
 logger = getLogger("funresource")
 
 
-def run():
+def run(args):
     manage = ResourceManage()
     generator_list: List[BaseGenerate] = [
         AcoooderGenerate(),
@@ -34,7 +34,7 @@ def funresource():
     subparsers = parser.add_subparsers(help="sub-command help")
 
     # 添加子命令
-    build_parser = subparsers.add_parser("build", help="build package")
+    build_parser = subparsers.add_parser("run", help="build package")
     build_parser.set_defaults(func=run)  # 设置默认函数
 
     args = parser.parse_args()
