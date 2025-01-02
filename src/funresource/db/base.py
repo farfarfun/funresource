@@ -142,16 +142,13 @@ class Resource(Base):
 
     def to_dict(self) -> dict:
         data = {
-            "id": self.id,
-            "gmt_create": self.gmt_create,
-            "gmt_update": self.gmt_update,
-            "name": self.name,
-            "source": self.source,
-            "status": self.status,
-            "url": self.url,
-            "pwd": self.pwd,
+            "name": self.name or "",
+            "source": self.source or "",
+            "status": self.status or 2,
+            "url": self.url or "",
+            "pwd": self.pwd or "",
             "update_time": self.update_time or datetime.now(),
-            "tags": self.tags,
+            "tags": self.tags or "",
         }
         for key in list(data.keys()):
             if data[key] is None:
