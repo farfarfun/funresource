@@ -93,15 +93,13 @@ class Resource(Base):
         data = [d.to_dict() for d in res]
         stmt = insert(Resource).values(data)
         stmt = stmt.on_duplicate_key_update(
-            set_={
-                "name": stmt.inserted.name,
-                "source": stmt.inserted.source,
-                "status": stmt.inserted.status,
-                "url": stmt.inserted.url,
-                "pwd": stmt.inserted.pwd,
-                "update_time": stmt.inserted.update_time,
-                "tags": stmt.inserted.tags,
-            }
+            name=stmt.inserted.name,
+            source=stmt.inserted.source,
+            status=stmt.inserted.status,
+            url=stmt.inserted.url,
+            pwd=stmt.inserted.pwd,
+            update_time=stmt.inserted.update_time,
+            tags=stmt.inserted.tags,
         )
         session.execute(stmt)
 
