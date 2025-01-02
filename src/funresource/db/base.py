@@ -88,16 +88,22 @@ class Resource(Base):
         stmt = insert(Resource).values(**self.to_dict())
         stmt = stmt.on_duplicate_key_update(**self.to_dict())
         session.execute(stmt)
-        # if not self.is_avail():
-        #     return False
-        # if not self.exists(session):
-        #     session.execute(insert(Resource).values(**self.to_dict()))
-        # elif update_data:
-        #     session.execute(
-        #         update(Resource)
-        #         .where(Resource.name == self.name and Resource.url == self.url)
-        #         .values(**self.to_dict())
-        #     )
+
+    def upsert_mult(self, session: Session, res, update_data=False):
+        data = [d.to_dict() for d in res]
+        stmt = insert(Resource).values(data)
+        stmt = stmt.on_duplicate_key_update(
+            set_={
+                "name": stmt.inserted.name,
+                "source": stmt.inserted.source,
+                "status": stmt.inserted.status,
+                "url": stmt.inserted.url,
+                "pwd": stmt.inserted.pwd,
+                "update_time": stmt.inserted.update_time,
+                "tags": stmt.inserted.tags,
+            }
+        )
+        session.execute(stmt)
 
     def is_avail(self):
         if self.url is not None:
@@ -176,11 +182,14 @@ class ResourceManage:
 
     def add_resources(self, generator: Iterator[Resource], update_data=True):
         with Session(self.engine) as session:
+            res = []
             for size, resource in enumerate(generator):
                 try:
-                    resource.upsert(session, update_data)
+                    res.append(resource)
                     if size % 100 == 0:
+                        resource.upsert_mult(session, res, update_data=update_data)
                         session.commit()
+                        res.clear()
                 except Exception as e:
                     logger.error(e)
             session.commit()

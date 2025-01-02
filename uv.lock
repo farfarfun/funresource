@@ -308,7 +308,7 @@ wheels = [
 
 [[package]]
 name = "funresource"
-version = "1.0.39"
+version = "1.0.40"
 source = { virtual = "." }
 dependencies = [
     { name = "bs4" },
