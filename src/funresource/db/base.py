@@ -161,7 +161,7 @@ class ResourceManage:
             for size, resource in enumerate(generator):
                 try:
                     res.append(resource)
-                    if size % 200 == 0:
+                    if size % 500 == 0:
                         Resource.upsert_mult(session, res, update_data=update_data)
                         session.commit()
                         res.clear()
