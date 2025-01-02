@@ -56,7 +56,9 @@ class TelegramPage:
                         "size": get_value("大小"),
                         "time": datetime.fromisoformat(
                             self.soup.find("time")["datetime"]
-                        ),
+                        )
+                        if self.soup.find("time")
+                        else datetime.now(),
                     }
                 )
             except Exception as e:
