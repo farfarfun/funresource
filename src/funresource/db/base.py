@@ -1,5 +1,6 @@
 import enum
 import os
+from datetime import datetime
 from typing import Iterator
 
 from fundb.sqlalchemy.table import BaseTable
@@ -52,10 +53,13 @@ class Resource(BaseTable):
 
     url: Mapped[str] = mapped_column(String(128), comment="分享链接")
     pwd: Mapped[str] = mapped_column(String(64), comment="密码", default="")
+    update_time: Mapped[datetime] = mapped_column(
+        String(128), comment="更新时间", default=datetime.now
+    )
     tags: Mapped[str] = mapped_column(String(128), comment="资源类型", default="")
 
     def __repr__(self) -> str:
-        return f"name: {self.name}, url: {self.url}, gmt_modified: {self.gmt_modified}"
+        return f"name: {self.name}, url: {self.url}, update_time: {self.update_time}"
 
     def _to_dict(self) -> dict:
         return {
@@ -64,6 +68,7 @@ class Resource(BaseTable):
             "status": self.status or 2,
             "url": self.url or "",
             "pwd": self.pwd or "",
+            "update_time": self.update_time or datetime.now(),
             "tags": self.tags or "",
         }
 
@@ -78,7 +83,8 @@ class Resource(BaseTable):
         stmt = stmt.on_duplicate_key_update(**self.to_dict())
         session.execute(stmt)
 
-    def upsert_mult(self, session: Session, res, update_data=False):
+    @staticmethod
+    def upsert_mult(session: Session, res, update_data=False):
         data = [d.to_dict() for d in res]
         stmt = insert(Resource).values(data)
         stmt = stmt.on_duplicate_key_update(
@@ -87,6 +93,7 @@ class Resource(BaseTable):
             status=stmt.inserted.status,
             url=stmt.inserted.url,
             pwd=stmt.inserted.pwd,
+            update_time=stmt.inserted.update_time,
             tags=stmt.inserted.tags,
         )
         session.execute(stmt)
@@ -155,7 +162,7 @@ class ResourceManage:
                 try:
                     res.append(resource)
                     if size % 100 == 0:
-                        resource.upsert_mult(session, res, update_data=update_data)
+                        Resource.upsert_mult(session, res, update_data=update_data)
                         session.commit()
                         res.clear()
                 except Exception as e:
