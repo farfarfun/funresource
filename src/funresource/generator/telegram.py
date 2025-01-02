@@ -4,11 +4,10 @@ from typing import Iterator
 
 import requests
 from bs4 import BeautifulSoup
-from funutil import getLogger
-from tqdm import tqdm
-
 from funresource.db.base import Resource
 from funresource.generator.base import BaseGenerate
+from funutil import getLogger
+from tqdm import tqdm
 
 logger = getLogger("funresource")
 
@@ -48,19 +47,22 @@ class TelegramPage:
                             return text.split("：")[1] or texts[i + 1]
                     return entry.find("b").text
 
-                result.append(
-                    {
-                        "name": get_value("名称"),
-                        "link": get_value("链接"),
-                        # "desc": get_value("描述"),
-                        "size": get_value("大小"),
-                        "time": datetime.fromisoformat(
-                            self.soup.find("time")["datetime"]
-                        )
-                        if self.soup.find("time")
-                        else datetime.now(),
-                    }
+                time = self.soup.find("time")
+                time = (
+                    datetime.fromisoformat(time["datetime"])
+                    if time and "datetime" in time
+                    else datetime.now()
                 )
+                link = get_value("链接")
+                if link and not link.startswith("https://t.me"):
+                    result.append(
+                        {
+                            "name": get_value("名称"),
+                            "link": link,
+                            "size": get_value("大小"),
+                            "time": time,
+                        }
+                    )
             except Exception as e:
                 logger.error(f"parse error: {e}")
         return result
@@ -104,7 +106,7 @@ class TelegramChannelGenerate(BaseGenerate):
     def generate(self, *args, **kwargs) -> Iterator[Resource]:
         for i, channel_name in enumerate(self.channel_list):
             for entry in self.parse_page(
-                channel_name, prefix=f"{i+1}/{len(self.channel_list)}"
+                channel_name, prefix=f"{i + 1}/{len(self.channel_list)}"
             ):
                 yield Resource(
                     name=entry["name"],
