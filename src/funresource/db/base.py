@@ -73,10 +73,6 @@ class Resource(BaseTable):
     def _child(self):
         return Resource
 
-    @property
-    def uid(self):
-        return f"{self.name}:{self.url}"
-
     def upsert(self, session: Session, update_data=False):
         stmt = insert(Resource).values(**self.to_dict())
         stmt = stmt.on_duplicate_key_update(**self.to_dict())
