@@ -45,7 +45,6 @@ class Base(DeclarativeBase):
 
 class Resource(Base):
     __tablename__ = "resource"
-    id: Mapped[int] = mapped_column(primary_key=True, comment="", autoincrement=True)
     gmt_create: Mapped[datetime] = mapped_column(comment="", default=datetime.now)
     gmt_update: Mapped[datetime] = mapped_column(
         comment="", default=datetime.now, onupdate=datetime.now
@@ -57,19 +56,19 @@ class Resource(Base):
         Enum(Status), comment="状态", default=Status.ONLINE
     )
 
-    name: Mapped[str] = mapped_column(String(128), comment="资源名称")
+    name: Mapped[str] = mapped_column(String(128), comment="资源名称", primary_key=True)
     desc: Mapped[str] = mapped_column(String(512), comment="资源描述", default="")
     pic: Mapped[str] = mapped_column(String(128), comment="资源图片", default="")
     size: Mapped[int] = mapped_column(comment="大小", default=0)
 
-    url: Mapped[str] = mapped_column(String(128), comment="分享链接")
+    url: Mapped[str] = mapped_column(String(128), comment="分享链接", primary_key=True)
     pwd: Mapped[str] = mapped_column(String(64), comment="密码", default="")
     update_time: Mapped[datetime] = mapped_column(
         String(128), comment="更新时间", default=datetime.now
     )
     tags: Mapped[str] = mapped_column(String(128), comment="资源类型", default="")
 
-    __table_args__ = (UniqueConstraint("name", "url", name="unique_constraint"),)
+    # __table_args__ = (UniqueConstraint("name", "url", name="unique_constraint"),)
 
     def __repr__(self) -> str:
         return f"name: {self.name}, url: {self.url}, update_time: {self.update_time}"
