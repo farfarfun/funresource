@@ -54,7 +54,7 @@ class Resource(BaseTable):
     url: Mapped[str] = mapped_column(String(128), comment="分享链接")
     pwd: Mapped[str] = mapped_column(String(64), comment="密码", default="")
     update_time: Mapped[datetime] = mapped_column(
-        String(128), comment="更新时间", default=datetime.now
+        comment="更新时间", default=datetime.now
     )
     tags: Mapped[str] = mapped_column(String(128), comment="资源类型", default="")
 
