@@ -159,6 +159,8 @@ class ResourceManage:
         with Session(self.engine) as session:
             res = []
             for size, resource in enumerate(generator):
+                if not resource.is_avail():
+                    continue
                 try:
                     res.append(resource)
                     if size % 500 == 0:
