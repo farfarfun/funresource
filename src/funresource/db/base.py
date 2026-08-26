@@ -4,7 +4,7 @@ from datetime import datetime
 from typing import Iterator
 
 from fundb.sqlalchemy.table import BaseTable
-from nltsecret import read_secret
+from funsecret import read_secret
 from funutil import getLogger
 from sqlalchemy import (
     Enum,
