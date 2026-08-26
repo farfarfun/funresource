@@ -2,7 +2,7 @@ import os
 from typing import Iterator
 
 import pandas as pd
-from funbuild.shell import run_shell
+from funshell import run_shell
 from funutil import getLogger
 from tqdm import tqdm
 
