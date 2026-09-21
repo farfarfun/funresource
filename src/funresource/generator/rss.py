@@ -1,14 +1,14 @@
 import re
 import time
 from datetime import datetime
-from typing import Iterator
+from collections.abc import Iterator
 
 import feedparser
 import requests
 from bs4 import BeautifulSoup
 from funresource.db.base import Resource
 from funresource.generator.base import BaseGenerate
-from funutil import getLogger
+from farlog import getLogger
 
 logger = getLogger("funresource")
 

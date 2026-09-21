@@ -1,12 +1,12 @@
 import traceback
 from datetime import datetime
-from typing import Iterator
+from collections.abc import Iterator
 
 import requests
 from bs4 import BeautifulSoup
 from funresource.db.base import Resource
 from funresource.generator.base import BaseGenerate
-from funutil import getLogger
+from farlog import getLogger
 from tqdm import tqdm
 
 logger = getLogger("funresource")
@@ -19,23 +19,28 @@ class TelegramPage:
         self.text = requests.get(url).text
         self.soup = BeautifulSoup(self.text, "lxml")
 
-    def prev(self):
+    def prev(self) -> str | None:
+        """返回上一页链接；不存在时返回 None。"""
         try:
             return self.soup.find(rel="prev")["href"]
         except Exception as e:
             logger.error(f"cannot find prev page:{e}")
             return None
 
-    def next(self):
+    def next(self) -> str | None:
+        """返回页面声明的下一页链接。"""
         return self.soup.find(rel="prev")["href"]
 
-    def size(self):
+    def size(self) -> int:
+        """返回当前页面资源数量。"""
         return len(self.resource())
 
-    def resource(self):
+    def resource(self) -> list:
+        """返回当前页面资源节点。"""
         return self.soup.find_all("div", {"class": "tgme_widget_message_text"})
 
-    def parse(self):
+    def parse(self) -> list[dict]:
+        """解析当前页面中的资源字段。"""
         result = []
         for entry in self.resource():
             try:

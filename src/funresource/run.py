@@ -1,26 +1,25 @@
 #!/usr/bin/python3
 
 
-from typing import List
-
 import click
+from farlog import getLogger
 from funresource.db.base import ResourceManage
 from funresource.generator import AcoooderGenerate, RSSGenerate, TelegramChannelGenerate
 from funresource.generator.base import BaseGenerate
-from funutil import getLogger
 
 logger = getLogger("funresource")
 
 
 @click.group()
-def cli():
-    pass
+def cli() -> None:
+    """资源采集命令行入口。"""
 
 
 @cli.command()
-def run(*args, **kwargs):
+def run(*args, **kwargs) -> None:
+    """运行内置采集器并写入资源数据库。"""
     manage = ResourceManage()
-    generator_list: List[BaseGenerate] = [
+    generator_list: list[BaseGenerate] = [
         AcoooderGenerate(),
         RSSGenerate(),
         TelegramChannelGenerate(),
@@ -29,9 +28,11 @@ def run(*args, **kwargs):
     for generator in generator_list:
         try:
             generator.run(manage)
-        except Exception as e:
-            print(e)
+        except Exception as error:
+            logger.exception("采集器 {} 执行失败", type(generator).__name__)
+            raise click.ClickException(str(error)) from error
 
 
-def funresource():
+def funresource() -> None:
+    """启动 funresource CLI。"""
     cli()

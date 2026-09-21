@@ -30,3 +30,16 @@ results = manage.find("庆余年")  # 按名称正则检索已入库的资源
 ## 数据存储
 
 默认使用 SQLite（`./funresource/resource.db`），可通过 [funsecret](https://github.com/farfarfun/funsecret) 配置 `funresource.engine.uri` 切换为 MySQL 等数据库。
+
+---
+
+## 关于 farfarfun
+
+[farfarfun](https://github.com/farfarfun) 是一个专注于实用工具库的开源组织，
+涵盖云存储、数据处理、AI、多媒体与开发工具链等方向。
+
+- 🏠 组织主页：<https://github.com/farfarfun>
+- 📦 PyPI：<https://pypi.org/user/niuliangtao/>
+- 📧 联系：farfarfun@qq.com
+
+本项目基于 [MIT](LICENSE) 协议开源。

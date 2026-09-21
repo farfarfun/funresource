@@ -1,24 +1,24 @@
 import enum
 import os
 from datetime import datetime
-from typing import Iterator
+from collections.abc import Iterator
 
 from fundb.sqlalchemy.table import BaseTable
+from farlog import getLogger
 from funsecret import read_secret
-from funutil import getLogger
 from sqlalchemy import (
     Enum,
     String,
     create_engine,
     select,
 )
-from sqlalchemy.dialects.mysql import insert
 from sqlalchemy.orm import Mapped, Session, mapped_column
 
 logger = getLogger("funresource")
 
 
-def check_tags(text, words, tags):
+def check_tags(text: str, words: list[str], tags: list[str]) -> list[str]:
+    """根据文本命中关键词时返回对应标签。"""
     if any(word.lower() in text for word in words):
         return tags
     else:
@@ -64,7 +64,7 @@ class Resource(BaseTable):
     def _to_dict(self) -> dict:
         return {
             "name": self.name or "",
-            "source": self.source or "",
+            "source": self.source or Source.ALIYUN,
             "status": self.status or 2,
             "url": self.url or "",
             "pwd": self.pwd or "",
@@ -72,33 +72,32 @@ class Resource(BaseTable):
             "tags": self.tags or "",
         }
 
-    def _get_uid(self):
+    def _get_uid(self) -> str:
         return f"{self.name}:{self.url}"
 
-    def _child(self):
+    def _child(self) -> type["Resource"]:
         return Resource
 
-    def upsert(self, session: Session, update_data=False):
-        stmt = insert(Resource).values(**self.to_dict())
-        stmt = stmt.on_duplicate_key_update(**self.to_dict())
-        session.execute(stmt)
+    def upsert(self, session: Session, update_data: bool = False) -> None:
+        """使用 SQLAlchemy 会话执行跨数据库 upsert。"""
+        data = self.to_dict()
+        existing = session.get(Resource, data["uid"])
+        if existing is None:
+            session.add(Resource(**data))
+        elif update_data:
+            for key, value in data.items():
+                if key != "uid":
+                    setattr(existing, key, value)
 
     @staticmethod
-    def upsert_mult(session: Session, res, update_data=False):
-        data = [d.to_dict() for d in res]
-        stmt = insert(Resource).values(data)
-        stmt = stmt.on_duplicate_key_update(
-            name=stmt.inserted.name,
-            source=stmt.inserted.source,
-            status=stmt.inserted.status,
-            url=stmt.inserted.url,
-            pwd=stmt.inserted.pwd,
-            update_time=stmt.inserted.update_time,
-            tags=stmt.inserted.tags,
-        )
-        session.execute(stmt)
+    def upsert_mult(
+        session: Session, res: list["Resource"], update_data: bool = False
+    ) -> None:
+        """批量执行跨数据库 upsert。"""
+        for resource in res:
+            resource.upsert(session, update_data=update_data)
 
-    def is_avail(self):
+    def is_avail(self) -> bool:
         if self.url is not None:
             if "alipan" in self.url or "aliyundrive" in self.url:
                 self.source = Source.ALIYUN
@@ -125,7 +124,7 @@ class Resource(BaseTable):
             )
 
         if len(tags) == 0:
-            tags.append(self.tags)
+            tags.append(self.tags or "")
         tags = list(set(tags))
         self.tags = ",".join(tags)
 
@@ -135,12 +134,14 @@ class Resource(BaseTable):
 
 
 class ResourceManage:
-    def __init__(self, uri=None):
+    def __init__(self, uri: str | None = None):
+        """创建资源管理器并初始化数据库表。"""
         self.engine = create_engine(self.get_uri(uri), echo=False)
         BaseTable.metadata.create_all(self.engine)
 
     @staticmethod
-    def get_uri(uri=None) -> str:
+    def get_uri(uri: str | None = None) -> str:
+        """读取配置中的数据库 URI，未配置时返回本地 SQLite URI。"""
         if uri is not None:
             return uri
         uri = read_secret("funresource", "engine", "uri")
@@ -150,12 +151,16 @@ class ResourceManage:
         os.makedirs(root, exist_ok=True)
         return f"sqlite:///{root}/resource.db"
 
-    def add_resource(self, resource: Resource):
+    def add_resource(self, resource: Resource) -> None:
+        """写入一条资源记录。"""
         with Session(self.engine) as session:
             resource.upsert(session)
             session.commit()
 
-    def add_resources(self, generator: Iterator[Resource], update_data=True):
+    def add_resources(
+        self, generator: Iterator[Resource], update_data: bool = True
+    ) -> None:
+        """批量校验并写入资源记录。"""
         with Session(self.engine) as session:
             res = []
             for size, resource in enumerate(generator):
@@ -167,13 +172,15 @@ class ResourceManage:
                         Resource.upsert_mult(session, res, update_data=update_data)
                         session.commit()
                         res.clear()
-                except Exception as e:
-                    logger.error(e)
+                except Exception:
+                    logger.exception("批量写入资源失败")
+                    raise
             Resource.upsert_mult(session, res, update_data=update_data)
             session.commit()
             res.clear()
 
-    def find(self, keyword):
+    def find(self, keyword: str) -> list[Resource]:
+        """按名称正则查询资源。"""
         with Session(self.engine) as session:
             stmt = select(Resource).where(Resource.name.regexp_match(keyword))
             return [resource for resource in session.execute(stmt).scalars()]

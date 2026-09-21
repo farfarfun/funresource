@@ -4,14 +4,7 @@
 sqlite（临时文件 / 内存）引擎完成基本读写操作、CLI 入口可以正常
 展示帮助信息；所有会触发真实网络请求的路径都用 unittest.mock 打桩。
 
-注意（不在本次任务修复范围内的既有问题，仅记录/跳过，不做修复）：
-- `Resource.upsert` / `Resource.upsert_mult` 内部使用了
-  `sqlalchemy.dialects.mysql.insert(...).on_duplicate_key_update(...)`，
-  这是 MySQL 方言专属语法。当 `ResourceManage` 使用 sqlite 引擎
-  （包括默认引擎、本测试文件里构造的临时 sqlite 文件 / 内存库）时，
-  执行到 `add_resource` / `add_resources` 会必然抛出
-  `sqlalchemy.exc.UnsupportedCompilationError`。相关测试用
-  `pytest.raises` 显式记录了这个已知行为，而不是让测试套件失败。
+SQLite 和 MySQL 都通过 SQLAlchemy 会话执行写入，测试覆盖默认 SQLite 路径。
 """
 
 import sqlite3
@@ -22,7 +15,6 @@ from unittest.mock import MagicMock, patch
 import pytest
 from click.testing import CliRunner
 from sqlalchemy import inspect
-from sqlalchemy.exc import UnsupportedCompilationError
 
 
 # ---------------------------------------------------------------------------
@@ -111,30 +103,25 @@ def test_resource_manage_find_on_empty_db():
     assert manage.find("anything") == []
 
 
-def test_resource_manage_add_resource_hits_known_mysql_only_bug():
-    """记录已知问题：sqlite 引擎下 add_resource 会抛出编译异常。
-
-    `Resource.upsert` 硬编码使用了 `sqlalchemy.dialects.mysql.insert`
-    的 `on_duplicate_key_update`，这是 MySQL 专属方言语法，在 sqlite
-    编译器下无法渲染。这是源码里的业务逻辑缺陷，不在本次冒烟测试
-    任务的修复范围内，这里只做记录，不做修复。
-    """
+def test_resource_manage_add_resource_works_with_sqlite():
     from funresource.db.base import Resource, ResourceManage
 
     manage = ResourceManage(uri="sqlite:///:memory:")
     resource = Resource(name="test", url="https://alipan.example.com/abc")
 
-    with pytest.raises(UnsupportedCompilationError):
-        manage.add_resource(resource)
+    manage.add_resource(resource)
+    assert manage.find("test")[0].url == resource.url
 
 
-def test_resource_manage_add_resources_hits_known_mysql_only_bug():
-    from funresource.db.base import ResourceManage
+def test_resource_manage_add_resources_works_with_sqlite():
+    from funresource.db.base import Resource, ResourceManage
 
     manage = ResourceManage(uri="sqlite:///:memory:")
 
-    with pytest.raises(UnsupportedCompilationError):
-        manage.add_resources(iter([]))
+    manage.add_resources(
+        iter([Resource(name="test", url="https://alipan.example.com/abc")])
+    )
+    assert manage.find("test")
 
 
 # ---------------------------------------------------------------------------

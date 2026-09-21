@@ -1,9 +1,9 @@
 import os
-from typing import Iterator
+from collections.abc import Iterator
 
 import pandas as pd
 from funshell import run_shell
-from funutil import getLogger
+from farlog import getLogger
 from tqdm import tqdm
 
 from funresource.db.base import Resource
