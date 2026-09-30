@@ -10,12 +10,12 @@ SQLite 和 MySQL 都通过 SQLAlchemy 会话执行写入，测试覆盖默认 SQ
 import sqlite3
 import subprocess
 import sys
+import time
 from unittest.mock import MagicMock, patch
 
 import pytest
 from click.testing import CliRunner
 from sqlalchemy import inspect
-
 
 # ---------------------------------------------------------------------------
 # 1. 顶层包 / 子模块导入
@@ -29,14 +29,14 @@ def test_import_top_level_package():
 
 
 def test_import_public_submodules():
-    import funresource.db  # noqa: F401
-    import funresource.db.base  # noqa: F401
-    import funresource.generator  # noqa: F401
-    import funresource.generator.base  # noqa: F401
-    import funresource.generator.acoooder  # noqa: F401
-    import funresource.generator.rss  # noqa: F401
-    import funresource.generator.telegram  # noqa: F401
-    import funresource.run  # noqa: F401
+    import funresource.db
+    import funresource.db.base
+    import funresource.generator
+    import funresource.generator.acoooder
+    import funresource.generator.base
+    import funresource.generator.rss
+    import funresource.generator.telegram
+    import funresource.run
     import funresource.view  # noqa: F401
 
 
@@ -179,10 +179,7 @@ def test_base_generate_default_methods_are_noop():
     base.init()
     base.load()
     base.destroy()
-    # 基类 generate() 的默认实现只有 `pass`，实际返回 None（尽管类型注解
-    # 写的是 Iterator[Resource]）；这里记录真实行为而不是想当然地假设
-    # 返回空迭代器。
-    assert base.generate() is None
+    assert list(base.generate()) == []
 
 
 def test_base_generate_run_orchestrates_without_network():
@@ -214,11 +211,48 @@ def test_base_generate_run_orchestrates_without_network():
     fake_manage.add_resources.assert_called_once()
 
 
+def test_base_generate_run_cleans_up_after_failure():
+    from funresource.generator.base import BaseGenerate
+
+    generator = BaseGenerate()
+    generator.load = MagicMock(side_effect=RuntimeError("failed"))
+    generator.destroy = MagicMock()
+
+    with pytest.raises(RuntimeError, match="failed"):
+        generator.run(manage=MagicMock())
+
+    generator.destroy.assert_called_once_with()
+
+
 def test_acoooder_generate_constructs_without_network():
     from funresource.generator.acoooder import AcoooderGenerate
 
     generator = AcoooderGenerate()
     assert generator.tmp_path.endswith("funresource/tmp")
+    assert generator.data.empty
+
+
+def test_acoooder_load_handles_empty_directory(tmp_path):
+    from funresource.generator.acoooder import AcoooderGenerate
+
+    generator = AcoooderGenerate()
+    generator.tmp_path = str(tmp_path)
+    generator.load()
+
+    assert generator.data.empty
+    assert list(generator.generate()) == []
+
+
+def test_acoooder_load_skips_invalid_markdown(tmp_path):
+    from funresource.generator.acoooder import AcoooderGenerate
+
+    (tmp_path / "bad.md").write_text("invalid", encoding="utf-8")
+    generator = AcoooderGenerate()
+    generator.tmp_path = str(tmp_path)
+
+    with patch.object(generator, "read_data", side_effect=ValueError("bad table")):
+        generator.load()
+
     assert generator.data.empty
 
 
@@ -237,16 +271,62 @@ def test_rss_generate_generate_uses_mocked_network():
     generator = RSSGenerate()
     generator.url_list = ["https://example.com/feed"]
 
-    with patch("funresource.generator.rss.requests.get") as mock_get, patch(
-        "funresource.generator.rss.feedparser.parse"
-    ) as mock_parse:
+    with (
+        patch("funresource.generator.rss.requests.get") as mock_get,
+        patch("funresource.generator.rss.feedparser.parse") as mock_parse,
+    ):
         mock_get.return_value = MagicMock(text="<xml></xml>")
         mock_parse.return_value = {"entries": []}
 
         results = list(generator.generate())
 
     assert results == []
-    mock_get.assert_called_once_with("https://example.com/feed")
+    mock_get.assert_called_once_with("https://example.com/feed", timeout=10)
+
+
+def test_rss_generate_parses_valid_entry_and_skips_invalid_entry():
+    from funresource.generator.rss import RSSGenerate
+
+    generator = RSSGenerate()
+    generator.url_list = ["https://example.com/feed"]
+    valid = {
+        "summary_detail": {
+            "value": '<p>名称：示例电影<br>描述：高清</p><a href="https://www.alipan.com/s/abc">链接</a>'
+        },
+        "published_parsed": time.gmtime(0),
+    }
+    response = MagicMock(text="<xml></xml>")
+
+    with (
+        patch("funresource.generator.rss.requests.get", return_value=response),
+        patch(
+            "funresource.generator.rss.feedparser.parse",
+            return_value={"entries": [{}, valid]},
+        ),
+    ):
+        results = list(generator.generate())
+
+    assert len(results) == 1
+    assert results[0].name == "示例电影"
+    assert results[0].url == "https://www.alipan.com/s/abc"
+
+
+def test_rss_generate_reports_timeout():
+    import requests
+
+    from funresource.generator.rss import RSSGenerate
+
+    generator = RSSGenerate()
+    generator.url_list = ["https://example.com/feed"]
+
+    with (
+        patch(
+            "funresource.generator.rss.requests.get",
+            side_effect=requests.Timeout("timed out"),
+        ),
+        pytest.raises(RuntimeError, match="https://example.com/feed"),
+    ):
+        list(generator.generate())
 
 
 def test_telegram_channel_generate_constructs_without_network():
@@ -263,8 +343,47 @@ def test_telegram_page_uses_mocked_network():
         mock_get.return_value = MagicMock(text="<html></html>")
         page = TelegramPage("/s/some_channel")
 
-    mock_get.assert_called_once_with("https://t.me/s/some_channel")
+    mock_get.assert_called_once_with("https://t.me/s/some_channel", timeout=10)
     assert page.resource() == []
+
+
+def test_telegram_page_navigation_and_resource_parsing():
+    from funresource.generator.telegram import TelegramPage
+
+    html = """
+    <a rel="prev" href="/s/channel?before=1"></a>
+    <a rel="next" href="/s/channel?after=1"></a>
+    <time datetime="2026-09-30T12:00:00+00:00"></time>
+    <div class="tgme_widget_message_text">
+      <b>名称：示例电影</b><br>链接：https://www.alipan.com/s/abc<br>大小：1GB
+    </div>
+    """
+    with patch("funresource.generator.telegram.requests.get") as mock_get:
+        mock_get.return_value = MagicMock(text=html)
+        page = TelegramPage("https://t.me/s/channel")
+
+    assert page.prev() == "/s/channel?before=1"
+    assert page.next() == "/s/channel?after=1"
+    resources = page.parse()
+    assert resources[0]["name"] == "示例电影"
+    assert resources[0]["link"] == "https://www.alipan.com/s/abc"
+    assert resources[0]["size"] == "1GB"
+    assert resources[0]["time"].isoformat() == "2026-09-30T12:00:00+00:00"
+
+
+def test_telegram_page_reports_timeout():
+    import requests
+
+    from funresource.generator.telegram import TelegramPage
+
+    with (
+        patch(
+            "funresource.generator.telegram.requests.get",
+            side_effect=requests.Timeout("timed out"),
+        ),
+        pytest.raises(RuntimeError, match="https://t.me/s/channel"),
+    ):
+        TelegramPage("https://t.me/s/channel")
 
 
 # ---------------------------------------------------------------------------
@@ -291,6 +410,19 @@ def test_cli_run_subcommand_help_via_click_runner():
     assert result.exit_code == 0
 
 
+def test_cli_run_returns_nonzero_when_generator_fails():
+    from funresource.run import cli
+
+    runner = CliRunner()
+    with patch(
+        "funresource.run.AcoooderGenerate.run", side_effect=RuntimeError("failed")
+    ):
+        result = runner.invoke(cli, ["run"])
+
+    assert result.exit_code != 0
+    assert "failed" in result.output
+
+
 def test_cli_help_via_subprocess():
     """真正走 `funresource.run:funresource` 控制台脚本入口（子进程调用），
     覆盖 `[project.scripts] funresource = "funresource.run:funresource"`。"""
@@ -298,32 +430,15 @@ def test_cli_help_via_subprocess():
         [
             sys.executable,
             "-c",
-            "import sys; sys.argv=['funresource', '--help']; "
-            "from funresource.run import funresource; funresource()",
+            (
+                "import sys; sys.argv=['funresource', '--help']; "
+                "from funresource.run import funresource; funresource()"
+            ),
         ],
         capture_output=True,
+        check=False,
         text=True,
         timeout=30,
     )
     assert result.returncode == 0
     assert "Usage" in result.stdout
-
-
-# ---------------------------------------------------------------------------
-# 6. 需要真实凭据 / 网络才能验证的部分，明确跳过
-# ---------------------------------------------------------------------------
-
-
-def test_acoooder_generate_init_requires_real_network():
-    pytest.skip("需要真实凭据/网络，跳过：AcoooderGenerate.init 会执行真实 git clone")
-
-
-def test_telegram_channel_generate_full_crawl_requires_real_network():
-    pytest.skip("需要真实凭据/网络，跳过：TelegramChannelGenerate 完整抓取依赖 t.me 真实页面")
-
-
-def test_resource_manage_default_uri_may_read_real_secret_store():
-    pytest.skip(
-        "需要真实凭据/网络，跳过：ResourceManage() 默认构造会尝试通过 funsecret "
-        "读取真实的密钥存储（read_secret('funresource', 'engine', 'uri')）"
-    )

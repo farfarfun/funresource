@@ -1,8 +1,6 @@
-#!/usr/bin/python3
-
-
 import click
 from farlog import getLogger
+
 from funresource.db.base import ResourceManage
 from funresource.generator import AcoooderGenerate, RSSGenerate, TelegramChannelGenerate
 from funresource.generator.base import BaseGenerate

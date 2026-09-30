@@ -1,10 +1,10 @@
 import enum
 import os
-from datetime import datetime
 from collections.abc import Iterator
+from datetime import datetime
 
-from fundb.sqlalchemy.table import BaseTable
 from farlog import getLogger
+from fundb.sqlalchemy.table import BaseTable
 from funsecret import read_secret
 from sqlalchemy import (
     Enum,
@@ -26,6 +26,8 @@ def check_tags(text: str, words: list[str], tags: list[str]) -> list[str]:
 
 
 class Source(int, enum.Enum):
+    """网盘资源来源。"""
+
     UNKNOWN = 100
     ALIYUN = 101
     KUAKE = 102
@@ -34,12 +36,16 @@ class Source(int, enum.Enum):
 
 
 class Status(enum.IntEnum):
+    """资源上架状态。"""
+
     PENDING = 1  # 待上架
     ONLINE = 2  # 上架
     OFFLINE = 3  # 下架
 
 
 class Resource(BaseTable):
+    """可检索的网盘资源数据库记录。"""
+
     __tablename__ = "resource"
     source: Mapped[int] = mapped_column(
         Enum(Source), comment="来源", default=Source.ALIYUN
@@ -98,6 +104,7 @@ class Resource(BaseTable):
             resource.upsert(session, update_data=update_data)
 
     def is_avail(self) -> bool:
+        """规范化来源和标签，并判断资源 URL 是否可写入。"""
         if self.url is not None:
             if "alipan" in self.url or "aliyundrive" in self.url:
                 self.source = Source.ALIYUN
@@ -128,13 +135,13 @@ class Resource(BaseTable):
         tags = list(set(tags))
         self.tags = ",".join(tags)
 
-        if self.url is None or not self.url.startswith("http"):
-            return False
-        return True
+        return self.url is not None and self.url.startswith("http")
 
 
 class ResourceManage:
-    def __init__(self, uri: str | None = None):
+    """资源数据库的初始化、写入和查询入口。"""
+
+    def __init__(self, uri: str | None = None) -> None:
         """创建资源管理器并初始化数据库表。"""
         self.engine = create_engine(self.get_uri(uri), echo=False)
         BaseTable.metadata.create_all(self.engine)
