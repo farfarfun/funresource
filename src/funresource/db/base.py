@@ -3,8 +3,8 @@ import os
 from collections.abc import Iterator
 from datetime import datetime
 
+from fardb.sqlalchemy.table import BaseTable
 from farlog import getLogger
-from fundb.sqlalchemy.table import BaseTable
 from funsecret import read_secret
 from sqlalchemy import (
     Enum,

@@ -1,5 +1,15 @@
 # 更新日志
 
+## 未发布
+
+### 修复
+
+- `pyproject.toml` 的依赖声明从 `funddb`（PyPI 上的历史快照包，传递依赖已停更的 `funlog-tau`/`funutil`）
+  改为组织当前维护的 `fardb`（`fundb` 改名后的发布名，参见 farfarfun/todo-list#664），
+  `src/funresource/db/base.py` 的导入路径同步从 `fundb.sqlalchemy.table` 改为 `fardb.sqlalchemy.table`。
+- `pyproject.toml` 的 `description` 由占位值 `"funresource"` 改为据实描述。
+- CLI 命令 `run` 移除未使用的 `*args/**kwargs`，签名改为 `run() -> None`。
+
 ## 1.0.57
 
 ### 新增

@@ -558,6 +558,22 @@ wheels = [
 ]
 
 [[package]]
+name = "fardb"
+version = "1.4.4"
+source = { registry = "https://pypi.org/simple" }
+dependencies = [
+    { name = "farcache" },
+    { name = "farlog" },
+    { name = "pandas", version = "2.3.3", source = { registry = "https://pypi.org/simple" }, marker = "python_full_version < '3.11'" },
+    { name = "pandas", version = "3.0.5", source = { registry = "https://pypi.org/simple" }, marker = "python_full_version >= '3.11'" },
+    { name = "requests" },
+    { name = "sqlalchemy" },
+]
+wheels = [
+    { url = "https://files.pythonhosted.org/packages/d9/a7/c992cef2d70fb3ff5ad1fa48256dc3bb7181853df0c28c851078f0d34653/fardb-1.4.4-py3-none-any.whl", hash = "sha256:dd2dd23452cabb70af2ab466f41197dc987ffff16899e12aacead7d0547c9270", size = 9678, upload-time = "2026-10-02T11:32:57.382Z" },
+]
+
+[[package]]
 name = "farlog"
 version = "1.1.8"
 source = { registry = "https://pypi.org/simple" }
@@ -605,41 +621,15 @@ wheels = [
 ]
 
 [[package]]
-name = "funddb"
-version = "1.3.15"
-source = { registry = "https://pypi.org/simple" }
-dependencies = [
-    { name = "funlog-tau" },
-    { name = "funutil" },
-    { name = "sqlalchemy" },
-]
-sdist = { url = "https://files.pythonhosted.org/packages/3f/94/0c214439905d9b8a33d476d60b10cabdb19245193b3322d4e624803ef9a3/funddb-1.3.15.tar.gz", hash = "sha256:f844aa1e569a5efa0ddd50950ccf70aa80d35e8b70d6b17ad083a50c49a69a38", size = 3633, upload-time = "2026-02-11T12:12:50.299Z" }
-wheels = [
-    { url = "https://files.pythonhosted.org/packages/08/b1/765eef9b41a16eba43e9bb20ee87d7afa6fd0255227512243d6c30f0a7a0/funddb-1.3.15-py3-none-any.whl", hash = "sha256:04fb0591fade0a18978aaecf6e5a509eb18e06018e09033248d55fd7d76fe267", size = 4754, upload-time = "2026-02-11T12:12:49.47Z" },
-]
-
-[[package]]
-name = "funlog-tau"
-version = "1.0.2"
-source = { registry = "https://pypi.org/simple" }
-dependencies = [
-    { name = "loguru" },
-]
-sdist = { url = "https://files.pythonhosted.org/packages/f9/06/8a40f17f4051b5a378611207866e912ac07ef44c0e4c2a08aac45e14f479/funlog_tau-1.0.2.tar.gz", hash = "sha256:3566771121f5287c9ecff03625c581767b3ca30815d7e1a66544d845aa5d53fe", size = 2028, upload-time = "2026-02-13T15:03:22.301Z" }
-wheels = [
-    { url = "https://files.pythonhosted.org/packages/31/a8/5715c88afc7907680b0904c4e0b9ab275f86eb1944220dfc5563f0ce822b/funlog_tau-1.0.2-py3-none-any.whl", hash = "sha256:a8041a66ce425fc06907097247db6b88ab51d50fb1890b886d9334cf6e05b8a8", size = 2294, upload-time = "2026-02-13T15:03:21.07Z" },
-]
-
-[[package]]
 name = "funresource"
 version = "1.0.57"
 source = { editable = "." }
 dependencies = [
     { name = "bs4" },
     { name = "click" },
+    { name = "fardb" },
     { name = "farlog" },
     { name = "feedparser" },
-    { name = "funddb" },
     { name = "funsecret" },
     { name = "funshell" },
     { name = "lxml" },
@@ -660,9 +650,9 @@ dev = [
 requires-dist = [
     { name = "bs4", specifier = ">=0.0.2" },
     { name = "click", specifier = ">=8.0.0" },
+    { name = "fardb", specifier = ">=1.4.4" },
     { name = "farlog", specifier = ">=1.1" },
     { name = "feedparser", specifier = ">=6.0.11" },
-    { name = "funddb", specifier = ">=1.3.15" },
     { name = "funsecret", specifier = ">=1.4.84" },
     { name = "funshell", specifier = ">=1.0.19" },
     { name = "lxml", specifier = ">=4.9.0" },
@@ -701,17 +691,6 @@ version = "1.0.19"
 source = { registry = "https://pypi.org/simple" }
 wheels = [
     { url = "https://files.pythonhosted.org/packages/fb/2b/6b8ac073b8465b9a977ec68315b16715c832a533fb71a1cd5f74b410903a/funshell-1.0.19-py3-none-any.whl", hash = "sha256:cae36e8a21218e69e450ce19407301bbf1c11304e93f70f9503a813b006e970c", size = 5726, upload-time = "2026-02-24T13:03:06.65Z" },
-]
-
-[[package]]
-name = "funutil"
-version = "1.0.63"
-source = { registry = "https://pypi.org/simple" }
-dependencies = [
-    { name = "nltlog" },
-]
-wheels = [
-    { url = "https://files.pythonhosted.org/packages/de/ff/679f950dd5cea961b33c3ff5ecec1ddb425ddc5e0eb99247e48c53a27118/funutil-1.0.63-py3-none-any.whl", hash = "sha256:443d358b9373fb164312df7440c6fab882f39fe0c07c0e06584655fa06e9e5f0", size = 21935, upload-time = "2026-08-26T15:54:14.788Z" },
 ]
 
 [[package]]

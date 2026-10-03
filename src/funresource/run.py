@@ -14,7 +14,7 @@ def cli() -> None:
 
 
 @cli.command()
-def run(*args, **kwargs) -> None:
+def run() -> None:
     """运行内置采集器并写入资源数据库。"""
     manage = ResourceManage()
     generator_list: list[BaseGenerate] = [
