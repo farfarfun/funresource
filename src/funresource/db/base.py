@@ -85,7 +85,15 @@ class Resource(BaseTable):
         return Resource
 
     def upsert(self, session: Session, update_data: bool = False) -> None:
-        """使用 SQLAlchemy 会话执行跨数据库 upsert。"""
+        """使用 SQLAlchemy 会话执行跨数据库 upsert。
+
+        参数：
+            session：执行写入的 SQLAlchemy 会话。
+            update_data：记录已存在时是否用当前对象的字段更新它。
+
+        返回：
+            无。
+        """
         data = self.to_dict()
         existing = session.get(Resource, data["uid"])
         if existing is None:
@@ -99,12 +107,25 @@ class Resource(BaseTable):
     def upsert_mult(
         session: Session, res: list["Resource"], update_data: bool = False
     ) -> None:
-        """批量执行跨数据库 upsert。"""
+        """批量执行跨数据库 upsert。
+
+        参数：
+            session：执行写入的 SQLAlchemy 会话。
+            res：待写入的资源记录。
+            update_data：记录已存在时是否更新其字段。
+
+        返回：
+            无。
+        """
         for resource in res:
             resource.upsert(session, update_data=update_data)
 
     def is_avail(self) -> bool:
-        """规范化来源和标签，并判断资源 URL 是否可写入。"""
+        """规范化来源和标签，并判断资源 URL 是否可写入。
+
+        返回：
+            URL 为 HTTP(S) 链接时返回 True，否则返回 False。
+        """
         if self.url is not None:
             if "alipan" in self.url or "aliyundrive" in self.url:
                 self.source = Source.ALIYUN
@@ -139,16 +160,34 @@ class Resource(BaseTable):
 
 
 class ResourceManage:
-    """资源数据库的初始化、写入和查询入口。"""
+    """资源数据库的初始化、写入和查询入口。
+
+    参数：
+        uri：可选的 SQLAlchemy 数据库 URI；未提供时读取配置或使用本地 SQLite。
+    """
 
     def __init__(self, uri: str | None = None) -> None:
-        """创建资源管理器并初始化数据库表。"""
+        """创建资源管理器并初始化数据库表。
+
+        参数：
+            uri：可选的 SQLAlchemy 数据库 URI。
+
+        返回：
+            无。
+        """
         self.engine = create_engine(self.get_uri(uri), echo=False)
         BaseTable.metadata.create_all(self.engine)
 
     @staticmethod
     def get_uri(uri: str | None = None) -> str:
-        """读取配置中的数据库 URI，未配置时返回本地 SQLite URI。"""
+        """读取配置中的数据库 URI，未配置时返回本地 SQLite URI。
+
+        参数：
+            uri：显式指定的数据库 URI，提供时直接返回。
+
+        返回：
+            可供 SQLAlchemy 使用的数据库 URI。
+        """
         if uri is not None:
             return uri
         uri = read_secret("funresource", "engine", "uri")
@@ -159,7 +198,14 @@ class ResourceManage:
         return f"sqlite:///{root}/resource.db"
 
     def add_resource(self, resource: Resource) -> None:
-        """写入一条资源记录。"""
+        """写入一条资源记录。
+
+        参数：
+            resource：待校验并写入的资源记录。
+
+        返回：
+            无。
+        """
         with Session(self.engine) as session:
             resource.upsert(session)
             session.commit()
@@ -167,27 +213,38 @@ class ResourceManage:
     def add_resources(
         self, generator: Iterator[Resource], update_data: bool = True
     ) -> None:
-        """批量校验并写入资源记录。"""
+        """批量校验并写入资源记录。
+
+        参数：
+            generator：逐条产出待写入资源的迭代器。
+            update_data：同一资源已存在时是否更新已存字段。
+
+        返回：
+            无。
+        """
         with Session(self.engine) as session:
             res = []
             for size, resource in enumerate(generator):
                 if not resource.is_avail():
                     continue
-                try:
-                    res.append(resource)
-                    if size % 500 == 0:
-                        Resource.upsert_mult(session, res, update_data=update_data)
-                        session.commit()
-                        res.clear()
-                except Exception:
-                    logger.exception("批量写入资源失败")
-                    raise
+                res.append(resource)
+                if size % 500 == 0:
+                    Resource.upsert_mult(session, res, update_data=update_data)
+                    session.commit()
+                    res.clear()
             Resource.upsert_mult(session, res, update_data=update_data)
             session.commit()
             res.clear()
 
     def find(self, keyword: str) -> list[Resource]:
-        """按名称正则查询资源。"""
+        """按名称正则查询资源。
+
+        参数：
+            keyword：用于匹配资源名称的正则表达式。
+
+        返回：
+            按名称匹配到的资源记录。
+        """
         with Session(self.engine) as session:
             stmt = select(Resource).where(Resource.name.regexp_match(keyword))
             return [resource for resource in session.execute(stmt).scalars()]

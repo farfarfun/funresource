@@ -131,7 +131,16 @@ class TelegramChannelGenerate(BaseGenerate):
         page_no: int = 10,
         prefix: str = "",
     ) -> Iterator[TelegramResource]:
-        """从频道首页开始，沿上一页链接最多解析指定页数。"""
+        """从频道首页开始，沿上一页链接最多解析指定页数。
+
+        参数：
+            channel_name：Telegram 频道名称，不包含 ``@``。
+            page_no：最多请求并解析的页面数。
+            prefix：显示在进度条中的前缀。
+
+        返回：
+            逐条产出包含名称、链接、大小和时间的频道资源字典。
+        """
         page: TelegramPage | None = None
         for _ in tqdm(range(page_no), desc=f"{prefix}-{channel_name}"):
             url = f"/s/{channel_name}" if page is None else page.prev()

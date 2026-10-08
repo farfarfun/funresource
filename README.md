@@ -10,6 +10,11 @@ pip install funresource
 
 ## 命令行用法
 
+运行采集前需要能访问 GitHub（Acoooder）、RSSHub 和 Telegram 的公开页面；网络受限、
+目标站点不可用或频道内容变化时，采集会失败。`funresource run` 会在当前目录创建默认
+SQLite 数据库 `./funresource/resource.db`，并在采集 Acoooder 时创建
+`./funresource/tmp` 临时目录；临时目录会在该采集器完成后删除，数据库会保留。
+
 ```bash
 funresource run
 ```
@@ -30,6 +35,18 @@ results = manage.find("庆余年")  # 按名称正则检索已入库的资源
 ## 数据存储
 
 默认使用 SQLite（`./funresource/resource.db`），可通过 [funsecret](https://github.com/farfarfun/funsecret) 配置 `funresource.engine.uri` 切换为 MySQL 等数据库。
+
+## 开发与验证
+
+项目要求 Python 3.10 或更高版本。使用 uv 安装开发依赖并执行检查：
+
+```bash
+uv sync --group dev
+uv run ruff check .
+uv run ruff format --check .
+uv run pytest
+uv build
+```
 
 ---
 
